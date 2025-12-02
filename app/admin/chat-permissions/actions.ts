@@ -8,16 +8,6 @@ import {
   type ChatPermission 
 } from '@/lib/chat-permissions'
 
-export interface GrantPermissionResult {
-  success: boolean
-  error?: string
-}
-
-export interface RevokePermissionResult {
-  success: boolean
-  error?: string
-}
-
 export interface GetPermissionsResult {
   success: boolean
   data?: ChatPermission[]
@@ -30,32 +20,24 @@ export interface GetPermissionsResult {
  */
 export async function grantPermission(
   formData: FormData
-): Promise<GrantPermissionResult> {
+): Promise<void> {
+  const userId = formData.get('userId') as string
+  const notes = formData.get('notes') as string | null
+
+  // 입력 검증
+  if (!userId || typeof userId !== 'string' || !userId.trim()) {
+    throw new Error('사용자 ID가 필요합니다.')
+  }
+
   try {
-    const userId = formData.get('userId') as string
-    const notes = formData.get('notes') as string | null
-
-    // 입력 검증
-    if (!userId || typeof userId !== 'string' || !userId.trim()) {
-      return { 
-        success: false, 
-        error: '사용자 ID가 필요합니다.' 
-      }
-    }
-
     // 권한 부여
     await grantChatPermission(userId, notes || undefined)
 
     // 페이지 재검증
     revalidatePath('/admin/chat-permissions')
-
-    return { success: true }
   } catch (error: any) {
     console.error('GrantPermission Action Error:', error)
-    return {
-      success: false,
-      error: error.message || '권한 부여 중 오류가 발생했습니다.'
-    }
+    throw new Error(error.message || '권한 부여 중 오류가 발생했습니다.')
   }
 }
 
@@ -65,31 +47,23 @@ export async function grantPermission(
  */
 export async function revokePermission(
   formData: FormData
-): Promise<RevokePermissionResult> {
+): Promise<void> {
+  const userId = formData.get('userId') as string
+
+  // 입력 검증
+  if (!userId || typeof userId !== 'string' || !userId.trim()) {
+    throw new Error('사용자 ID가 필요합니다.')
+  }
+
   try {
-    const userId = formData.get('userId') as string
-
-    // 입력 검증
-    if (!userId || typeof userId !== 'string' || !userId.trim()) {
-      return { 
-        success: false, 
-        error: '사용자 ID가 필요합니다.' 
-      }
-    }
-
     // 권한 회수
     await revokeChatPermission(userId)
 
     // 페이지 재검증
     revalidatePath('/admin/chat-permissions')
-
-    return { success: true }
   } catch (error: any) {
     console.error('RevokePermission Action Error:', error)
-    return {
-      success: false,
-      error: error.message || '권한 회수 중 오류가 발생했습니다.'
-    }
+    throw new Error(error.message || '권한 회수 중 오류가 발생했습니다.')
   }
 }
 
